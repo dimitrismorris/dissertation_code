@@ -1,0 +1,168 @@
+import pandas as pd
+import numpy as np
+
+df = pd.read_fwf(
+    'port1.txt', sep=" ",header=None)
+#print(df)
+
+# define n as the number of assets in the dataset
+n = int(df[0].iloc[0])
+
+# split the dataframe into two data frames
+df_RR = df.iloc[1:n+1]
+df_CV = df.iloc[n+1:]
+#print(df_RR)
+
+#split the single column into two and give headings to both
+df_RR['mean returns'] = [d.split()[0] for d in df_RR[0]]
+df_RR['sd'] = [d.split()[1] for d in df_RR[0]]
+del df_RR[0]
+df_RR = df_RR.reset_index(drop=True)
+#print(df_RR)
+
+# split the single column into three and give headings to each
+df_CV['i'] = [d.split()[0] for d in df_CV[0]]
+df_CV['j'] = [d.split()[1] for d in df_CV[0]]
+df_CV['correlation'] = [d.split()[2] for d in df_CV[0]]
+del df_CV[0]
+df_CV = df_CV.reset_index(drop=True)
+#print(df_CV)
+
+#convert variables to correct type (numeric)
+df_CV = df_CV.apply(pd.to_numeric)
+df_RR = df_RR.apply(pd.to_numeric)
+
+# create correlation matrix
+df2 = df_CV.pivot(index='i', columns='j', values='correlation')
+df3 = np.triu(df2)
+iu = np.triu_indices(n,1)
+il = (iu[1],iu[0])
+df3[il]=df3[iu]
+
+#create sd array
+df_std = np.asarray(df_RR['sd'])
+
+#create covariance matrix
+df4 = np.multiply(df3, df_std)
+df_cov = np.multiply(df4, df_std)
+
+#create mean returns array
+df_mr = np.asarray(df_RR['mean returns'])
+
+# read in the unconstrained dataset ------------------------------
+df_un = pd.read_fwf(
+    'portef1.txt', sep=" ",header=None)
+
+# assign the columns to seperate dataframes (for objective space plot)
+mean_return_un = df_un[0]
+variance_of_return_un = df_un[1]
+
+# name columns
+df_un = df_un.rename(columns={0 : 'returns'})
+df_un = df_un.rename(columns={1 : 'risk values'})
+
+# swap columns
+columns_titles1 = ["risk values","returns"]
+df_un = df_un.reindex(columns=columns_titles1)
+
+df_un = np.asarray(df_un)
+
+df_un = np.delete(df_un, 2000, 0)
+
+tol = 1e-10
+v = df_cov
+m = df_mr
+s = df_std
+K = 10
+
+
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.core.problem import Problem
+from pymoo.core.problem import ElementwiseProblem
+from pymoo.optimize import minimize
+from pymoo.visualization.scatter import Scatter
+
+# initial population for use with cardinality constraint:
+# vectors with n-K zeros
+A0 = np.zeros((500,n))
+for i in range(500):
+    A0[i,:K]=np.random.rand(K)
+    A0[i]=A0[i]/np.sum(A0[i])
+    np.random.shuffle(A0[i])
+
+# create problem and constraint functions
+class MyProblem(ElementwiseProblem): ### changed
+
+    def __init__(self, m, v, s):
+        super().__init__(n_var=n,
+                         n_obj=3,
+                         n_constr=1,
+                         xl=np.array([0 for _ in range(n)]),
+                         xu=np.array([1 for _ in range(n)]))
+        self.m = m
+        self.v = v
+        self.s = s
+        
+    def _evaluate(self, x, out, *args, **kwargs):
+        x = x/np.sum(x)
+        f1 = np.dot(np.array(x).T, (np.dot(self.v, np.array(x))))
+        f2 = -(np.dot(np.array(x), self.m))  # max - = min +
+        f3 = -(np.divide(f2, np.sqrt(f1))) 
+
+
+        #g1 = np.array(x).any() < self.v.any()
+        g2 = sum(i > tol for i in x)-K
+        
+        #out["F"] = np.column_stack([f1, f2])
+        out["F"] = [f1,f2,f3]
+        out["G"] = [g2]
+        
+problem = MyProblem(m,v,s)
+
+#set initial population size
+algorithm = NSGA2(pop_size=500, sampling=A0)
+
+# create termination criteria
+from pymoo.factory import get_termination
+
+termination = get_termination("n_gen", 40000)
+
+# initialise minimise function
+from pymoo.optimize import minimize
+
+res = minimize(problem,
+               algorithm,
+               termination,
+               seed=None,
+               save_history=True,
+               verbose=True)
+
+X = res.X
+sum_of_rows = X.sum(axis=1)
+X = X / sum_of_rows[:, np.newaxis]
+F = np.abs(res.F)
+
+#show 2D EF plot
+import matplotlib.pyplot as plt
+plt.figure(figsize=(7, 5))
+plt.scatter(variance_of_return_un, mean_return_un, s=30, facecolors='none', edgecolors='red', label='Unconstrained (Beasley)')
+#plt.scatter(variance_of_return_cs, mean_return_cs, s=30, facecolors='none', edgecolors='limegreen', label='K=10 (Cesarone)')
+plt.scatter(F[:, 0], F[:, 1], s=30, facecolors='none', edgecolors='blue', label='K=10 (pymoo)')
+plt.title("Objective Space")
+plt.xlabel("Risk")
+plt.ylabel("Expected Return")
+plt.legend(loc='lower right', frameon=True)
+plt.show()
+
+#show 3D EF plot
+plt.figure(figsize=(7,5))
+ax = plt.axes(projection='3d')
+ax.scatter(F[:,0], F[:,1], F[:,2]*np.sqrt(262), c = 'b', marker = 'o')
+ax.set_xlabel('$Risk$')
+ax.set_ylabel('$Return$')
+ax.set_zlabel('$Sharpe Ratio$')
+plt.show()
+
+
+# save EF
+np.savetxt('port1_EF_k10_3D.txt', F)
