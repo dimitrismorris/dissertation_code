@@ -1,0 +1,91 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+#read in results file
+port1_res = pd.read_fwf('port1_results_k10.txt')
+port1_res = port1_res.loc[:, ~port1_res.columns.str.contains('^Unnamed')]
+
+#split file to seperate dataframes
+port1_un = port1_res['Unconstrained IGD']
+port1_un = port1_un.to_frame()
+port1_un = port1_un.rename(columns={"Unconstrained IGD": "Hang Seng"})
+port1_cs = port1_res['Cesarone IGD']
+port1_cs = port1_cs.to_frame()
+port1_cs = port1_cs.rename(columns={"Cesarone IGD": "Hang Seng"})
+port1_time = port1_res['Time (s)']
+port1_time = port1_time.to_frame()
+port1_time = port1_time.rename(columns={"Time (s)": "Hang Seng"})
+
+#read in results file
+port2_res = pd.read_fwf('port2_results_k10.txt')
+port2_res = port2_res.loc[:, ~port2_res.columns.str.contains('^Unnamed')]
+
+#split file to seperate dataframes
+port2_un = port2_res['Unconstrained IGD']
+port2_un = port2_un.to_frame()
+port2_un = port2_un.rename(columns={"Unconstrained IGD": "DAX 100"})
+port2_cs = port2_res['Cesarone IGD']
+port2_cs = port2_cs.to_frame()
+port2_cs = port2_cs.rename(columns={"Cesarone IGD": "DAX 100"})
+port2_time = port2_res['Time (s)']
+port2_time = port2_time.to_frame()
+port2_time = port2_time.rename(columns={"Time (s)": "DAX 100"})
+
+#read in results file
+port3_res = pd.read_fwf('port3_results_k10.txt')
+port3_res = port3_res.loc[:, ~port3_res.columns.str.contains('^Unnamed')]
+
+#split file to seperate dataframes
+port3_un = port3_res['Unconstrained IGD']
+port3_un = port3_un.to_frame()
+port3_un = port3_un.rename(columns={"Unconstrained IGD": "FTSE 100"})
+port3_cs = port3_res['Cesarone IGD']
+port3_cs = port3_cs.to_frame()
+port3_cs = port3_cs.rename(columns={"Cesarone IGD": "FTSE 100"})
+port3_time = port3_res['Time (s)']
+port3_time = port3_time.to_frame()
+port3_time = port3_time.rename(columns={"Time (s)": "FTSE 100"})
+
+#read in results file
+port4_res = pd.read_fwf('port4_results_k10.txt')
+port4_res = port4_res.loc[:, ~port4_res.columns.str.contains('^Unnamed')]
+
+#split file to seperate dataframes
+port4_un = port4_res['Unconstrained IGD']
+port4_un = port4_un.to_frame()
+port4_un = port4_un.rename(columns={"Unconstrained IGD": "S&P 100"})
+port4_cs = port4_res['Cesarone IGD']
+port4_cs = port4_cs.to_frame()
+port4_cs = port4_cs.rename(columns={"Cesarone IGD": "S&P 100"})
+port4_time = port4_res['Time (s)']
+port4_time = port4_time.to_frame()
+port4_time = port4_time.rename(columns={"Time (s)": "S&P 100"})
+
+#read in results file
+port5_res = pd.read_fwf('port5_results_k10.txt')
+port5_res = port5_res.loc[:, ~port5_res.columns.str.contains('^Unnamed')]
+
+#split file to seperate dataframes
+port5_un = port5_res['Unconstrained IGD']
+port5_un = port5_un.to_frame()
+port5_un = port5_un.rename(columns={"Unconstrained IGD": "Nikkei 225"})
+port5_cs = port5_res['Cesarone IGD']
+port5_cs = port5_cs.to_frame()
+port5_cs = port5_cs.rename(columns={"Cesarone IGD": "Nikkei 225"})
+port5_time = port5_res['Time (s)']
+port5_time = port5_time.to_frame()
+port5_time = port5_time.rename(columns={"Time (s)": "Nikkei 225"})
+
+#concatenate dataframes to one dataframe based on variable
+un = pd.concat([port1_un, port2_un, port3_un, port4_un, port5_un], axis=1) 
+cs = pd.concat([port1_cs, port2_cs, port3_cs, port4_cs, port5_cs], axis=1) 
+t = pd.concat([port1_time, port2_time, port3_time, port4_time, port5_time], axis=1) 
+
+#show boxplot of data
+fig, ax = plt.subplots()
+ax.boxplot(cs, showfliers=False)
+plt.xticks([1, 2, 3, 4, 5], ["Hang Seng", "DAX 100", "FTSE 100", "S&P 100", "Nikkei 225"])
+ax.set_title('Cesarone (k=10)')
+plt.xlabel('Dataset')
+plt.ylabel('IGD value')
+plt.show()
