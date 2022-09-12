@@ -1,6 +1,6 @@
 # dissertation_code
 
-All data sourced for the publicly available OR-Library:
+All data sourced from the publicly available OR-Library:
 
 http://people.brunel.ac.uk/~mastjjb/jeb/orlib/files/
 
