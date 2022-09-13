@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 
+# read in the test dataset
 df = pd.read_fwf(
-    'port5.txt', sep=" ",header=None)
+    'port3.txt', sep=" ",header=None)
 #print(df)
 
 # define n as the number of assets in the dataset
@@ -51,7 +52,7 @@ df_mr = np.asarray(df_RR['mean returns'])
 
 # read in the unconstrained dataset ------------------------------
 df_un = pd.read_fwf(
-    'portef5.txt', sep=" ",header=None)
+    'portef3.txt', sep=" ",header=None)
 
 # assign the columns to seperate dataframes (for objective space plot)
 mean_return_un = df_un[0]
@@ -65,10 +66,14 @@ df_un = df_un.rename(columns={1 : 'risk values'})
 columns_titles1 = ["risk values","returns"]
 df_un = df_un.reindex(columns=columns_titles1)
 
-df_un = np.asarray(df_un)
+df_un = df_un.replace('\[', '', regex=True)
+df_un = df_un.replace('\]', '', regex=True)
+df_un = df_un.replace('\,', '', regex=True)
 
-# if needed
-df_un = np.delete(df_un, 2000, 0)
+df_un = df_un.astype(float)
+
+#if needed
+#df_un = np.delete(df_un, 2000, 0)
 
 tol = 1e-10
 v = df_cov
@@ -136,6 +141,11 @@ problem = MyProblem(m,v,s)
 #set initial population size
 algorithm = NSGA2(pop_size=500, sampling=A0)
 
+# create termination criteria
+from pymoo.factory import get_termination
+
+#termination = get_termination("n_gen", 1000)
+
 callback = MyCallback()
 
 # initialise minimise function
@@ -165,7 +175,7 @@ mean_return_un = df_un['returns']
 variance_of_return_un = df_un['risk values']
 
 
-#show 2D EF plot
+#show 3D EF plot
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(7,5))
@@ -177,3 +187,4 @@ ax.set_ylabel('$Return$')
 ax.set_zlabel('$Sharpe Ratio$')
 plt.legend(loc='upper right', prop={'size': 7.8}, frameon=True)
 plt.show()
+
