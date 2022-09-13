@@ -18,3 +18,5 @@ port1, port2, ..., port5
 
 'boxplots' contains code to visualise the IGD values from the optimisation and the run times
 
+'sharpe_ratio' contains code for portfolio optimisation after add Sharpe ratio as an objective
+
